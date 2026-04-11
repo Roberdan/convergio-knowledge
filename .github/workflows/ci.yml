@@ -19,12 +19,87 @@ on:
       - "deny.toml"
       - ".github/workflows/ci.yml"
 
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-Dwarnings"
+
 jobs:
-  ci:
-    uses: Roberdan/convergio/.github/workflows/reusable-ci-rust.yml@main
-    with:
-      coverage-threshold: 0
-      run-deny: true
-      run-semver: true
-      run-udeps: true
-      run-mutants: false
+  # ── Job 1: core checks (blocking) ──────────────────────────
+  # Inlined from reusable-ci-rust.yml — lancedb needs protoc at build time
+  check:
+    name: Check & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install protoc (required by lancedb → prost-build)
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --locked
+
+      - name: Test
+        run: cargo test --workspace --locked
+
+      - name: Install audit tools
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit,cargo-deny
+
+      - name: Audit (CVE)
+        run: cargo audit
+
+      - name: Deny (license + deps policy)
+        run: cargo deny check
+
+  # ── Job 2: quality gates (blocking, after check) ───────────
+  quality:
+    name: Quality Gates
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install protoc
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
+      - name: Install semver-checks
+        if: github.event_name == 'pull_request'
+        uses: taiki-e/install-action@cargo-semver-checks
+
+      - name: Semver check
+        if: github.event_name == 'pull_request'
+        run: cargo semver-checks check-release --workspace --baseline-rev origin/main
+
+      - name: Install nightly
+        run: rustup toolchain install nightly --profile minimal
+
+      - name: Install udeps
+        uses: taiki-e/install-action@cargo-udeps
+
+      - name: Unused deps
+        run: cargo +nightly udeps --workspace
+
+  # ── Job 3: informational (non-blocking) ────────────────────
+  info:
+    name: Info
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: PR title lint
+        if: github.event_name == 'pull_request'
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
