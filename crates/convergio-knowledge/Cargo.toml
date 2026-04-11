@@ -23,6 +23,9 @@ futures = { workspace = true }
 uuid = { workspace = true }
 dirs = { workspace = true }
 
+[build-dependencies]
+protobuf-src = { workspace = true }
+
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }
 tokio = { version = "1.44", features = ["macros", "rt-multi-thread", "test-util"] }

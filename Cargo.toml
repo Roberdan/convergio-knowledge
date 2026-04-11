@@ -28,6 +28,7 @@ arrow-array = "57.2"
 arrow-schema = "57.2"
 fastembed = "5.13.1"
 futures = "0.3"
+protobuf-src = "2"
 
 # Utility deps
 uuid = { version = "1", features = ["v4"] }
