@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.1](https://github.com/Roberdan/convergio-knowledge/compare/convergio-knowledge-v0.1.0...convergio-knowledge-v0.1.1) (2026-04-11)
+
+
+### Features
+
+* adapt convergio-knowledge for standalone repo ([b941f8e](https://github.com/Roberdan/convergio-knowledge/commit/b941f8ecd5cb78ed631b7be66ac56f1ea40e4c14))
+* initial convergio-knowledge from template ([86d8930](https://github.com/Roberdan/convergio-knowledge/commit/86d8930672706380c85614339ab686b8578312f8))
+
+
+### Bug Fixes
+
+* CI workflow_dispatch trigger for GitHub ([b3e539e](https://github.com/Roberdan/convergio-knowledge/commit/b3e539e721f3239d3f1defc3a38c75149c551c0d))
+* inline CI workflow with protoc for lancedb compatibility ([dde6bd7](https://github.com/Roberdan/convergio-knowledge/commit/dde6bd74d45509c321da7c0f8edbba58b51ccef7))
+* vendor protoc via protobuf-src for CI ([dbcd4e3](https://github.com/Roberdan/convergio-knowledge/commit/dbcd4e36c92fdd9675520f01ce07a5c6b2aadda3))
+
 ## 0.1.0 (Initial Release)
 
 ### Features
