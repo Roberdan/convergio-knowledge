@@ -6,6 +6,11 @@ all-features = true
 
 [advisories]
 version = 2
+# Transitive deps of lancedb/fastembed — unmaintained but no security impact
+ignore = [
+    "RUSTSEC-2025-0119",
+    "RUSTSEC-2024-0436",
+]
 
 [licenses]
 version = 2
@@ -20,6 +25,10 @@ allow = [
     "Unicode-DFS-2016",
     "Zlib",
     "CDLA-Permissive-2.0",
+    "0BSD",
+    "CC0-1.0",
+    "BSL-1.0",
+    "NCSA",
 ]
 confidence-threshold = 0.8
 
