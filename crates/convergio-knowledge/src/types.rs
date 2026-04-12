@@ -2,6 +2,53 @@
 
 use serde::{Deserialize, Serialize};
 
+/// Allowed visibility values.
+const VALID_VISIBILITIES: &[&str] = &["org", "public"];
+
+/// Allowed source types.
+const VALID_SOURCE_TYPES: &[&str] = &[
+    "task",
+    "commit",
+    "doc",
+    "agent_memory",
+    "kb",
+    "learning",
+    "decision",
+];
+
+/// Maximum content length (64 KiB).
+const MAX_CONTENT_LEN: usize = 65_536;
+
+/// Maximum search limit per request.
+const MAX_SEARCH_LIMIT: usize = 100;
+
+/// Maximum query length for search requests.
+const MAX_QUERY_LEN: usize = 2_000;
+
+/// Validate that a visibility value is allowed.
+pub fn validate_visibility(v: &str) -> Result<(), String> {
+    if VALID_VISIBILITIES.contains(&v) {
+        Ok(())
+    } else {
+        Err(format!(
+            "invalid visibility '{v}', must be one of: {}",
+            VALID_VISIBILITIES.join(", ")
+        ))
+    }
+}
+
+/// Validate that a source_type value is allowed.
+pub fn validate_source_type(st: &str) -> Result<(), String> {
+    if VALID_SOURCE_TYPES.contains(&st) {
+        Ok(())
+    } else {
+        Err(format!(
+            "invalid source_type '{st}', must be one of: {}",
+            VALID_SOURCE_TYPES.join(", ")
+        ))
+    }
+}
+
 /// A knowledge entry stored with its embedding.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KnowledgeEntry {
@@ -50,6 +97,27 @@ pub struct WriteRequest {
     pub visibility: String,
 }
 
+impl WriteRequest {
+    /// Validate all fields, returning the first error found.
+    pub fn validate(&self) -> Result<(), String> {
+        if self.content.is_empty() {
+            return Err("content must not be empty".into());
+        }
+        if self.content.len() > MAX_CONTENT_LEN {
+            return Err(format!(
+                "content too large ({} bytes, max {MAX_CONTENT_LEN})",
+                self.content.len()
+            ));
+        }
+        validate_source_type(&self.source_type)?;
+        validate_visibility(&self.visibility)?;
+        if self.source_id.is_empty() || self.source_id.len() > 256 {
+            return Err("source_id must be 1-256 characters".into());
+        }
+        Ok(())
+    }
+}
+
 fn default_visibility() -> String {
     "org".into()
 }
@@ -74,6 +142,27 @@ pub struct SearchRequest {
     pub federated: bool,
 }
 
+impl SearchRequest {
+    /// Validate and clamp fields.
+    pub fn sanitize(&mut self) -> Result<(), String> {
+        if self.query.is_empty() {
+            return Err("query must not be empty".into());
+        }
+        if self.query.len() > MAX_QUERY_LEN {
+            return Err(format!(
+                "query too long ({} chars, max {MAX_QUERY_LEN})",
+                self.query.len()
+            ));
+        }
+        self.limit = self.limit.clamp(1, MAX_SEARCH_LIMIT);
+        self.min_score = self.min_score.clamp(0.0, 1.0);
+        if let Some(ref st) = self.source_type {
+            validate_source_type(st)?;
+        }
+        Ok(())
+    }
+}
+
 fn default_limit() -> usize {
     5
 }
@@ -88,4 +177,102 @@ pub struct StoreStats {
     pub total_entries: i64,
     pub total_by_source: Vec<(String, i64)>,
     pub embedding_dimensions: usize,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn visibility_validation() {
+        assert!(validate_visibility("org").is_ok());
+        assert!(validate_visibility("public").is_ok());
+        assert!(validate_visibility("admin").is_err());
+        assert!(validate_visibility("").is_err());
+    }
+
+    #[test]
+    fn source_type_validation() {
+        assert!(validate_source_type("task").is_ok());
+        assert!(validate_source_type("commit").is_ok());
+        assert!(validate_source_type("doc").is_ok());
+        assert!(validate_source_type("kb").is_ok());
+        assert!(validate_source_type("agent_memory").is_ok());
+        assert!(validate_source_type("learning").is_ok());
+        assert!(validate_source_type("decision").is_ok());
+        assert!(validate_source_type("'; DROP TABLE --").is_err());
+        assert!(validate_source_type("").is_err());
+    }
+
+    #[test]
+    fn write_request_rejects_empty_content() {
+        let req = WriteRequest {
+            content: String::new(),
+            source_type: "doc".into(),
+            source_id: "d1".into(),
+            org_id: None,
+            agent_id: None,
+            project_id: None,
+            visibility: "org".into(),
+        };
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn write_request_rejects_oversized_content() {
+        let req = WriteRequest {
+            content: "x".repeat(MAX_CONTENT_LEN + 1),
+            source_type: "doc".into(),
+            source_id: "d1".into(),
+            org_id: None,
+            agent_id: None,
+            project_id: None,
+            visibility: "org".into(),
+        };
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn write_request_rejects_invalid_visibility() {
+        let req = WriteRequest {
+            content: "test".into(),
+            source_type: "doc".into(),
+            source_id: "d1".into(),
+            org_id: None,
+            agent_id: None,
+            project_id: None,
+            visibility: "admin".into(),
+        };
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn search_request_clamps_limit() {
+        let mut req = SearchRequest {
+            query: "test".into(),
+            limit: 99999,
+            org_id: None,
+            source_type: None,
+            project_id: None,
+            min_score: -5.0,
+            federated: false,
+        };
+        assert!(req.sanitize().is_ok());
+        assert_eq!(req.limit, MAX_SEARCH_LIMIT);
+        assert_eq!(req.min_score, 0.0);
+    }
+
+    #[test]
+    fn search_request_rejects_empty_query() {
+        let mut req = SearchRequest {
+            query: String::new(),
+            limit: 5,
+            org_id: None,
+            source_type: None,
+            project_id: None,
+            min_score: 0.3,
+            federated: false,
+        };
+        assert!(req.sanitize().is_err());
+    }
 }

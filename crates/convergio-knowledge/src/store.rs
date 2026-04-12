@@ -17,6 +17,26 @@ use crate::types::{KnowledgeEntry, SearchResult, StoreStats};
 
 pub const EMBEDDING_DIM: usize = 384;
 
+/// Maximum allowed limit for vector search queries.
+const MAX_SEARCH_LIMIT: usize = 100;
+
+/// Validate that an ID matches the expected format (`ke-<uuid>`).
+fn validate_id(id: &str) -> Result<(), String> {
+    if id.len() > 64 || !id.starts_with("ke-") || id.contains(['\'', '"', '\\', ';', '\0']) {
+        return Err(format!("invalid knowledge entry id: {id}"));
+    }
+    Ok(())
+}
+
+/// Sanitize a string for use in a LanceDB filter expression.
+/// Only allows alphanumeric, hyphens, underscores, dots, and slashes.
+fn sanitize_filter_value(s: &str) -> Result<String, String> {
+    if s.len() > 256 || s.contains(['\'', '"', '\\', ';', '\0']) {
+        return Err("invalid filter value: contains forbidden characters".to_string());
+    }
+    Ok(s.replace('\'', "''"))
+}
+
 pub struct LanceVectorStore {
     pub(crate) conn: Mutex<Connection>,
     pub(crate) table_name: String,
@@ -120,6 +140,9 @@ impl LanceVectorStore {
                 embedding.len()
             ));
         }
+        if content.is_empty() {
+            return Err("content must not be empty".into());
+        }
         let id = format!("ke-{}", uuid::Uuid::new_v4());
         let now = chrono::Utc::now().to_rfc3339();
 
@@ -168,6 +191,7 @@ impl LanceVectorStore {
         query_embedding: &[f32],
         limit: usize,
     ) -> Result<Vec<SearchResult>, String> {
+        let limit = limit.min(MAX_SEARCH_LIMIT);
         let conn = self.conn.lock().await;
         let table = conn
             .open_table(&self.table_name)
@@ -262,6 +286,7 @@ impl LanceVectorStore {
     }
 
     pub async fn delete(&self, id: &str) -> Result<bool, String> {
+        validate_id(id)?;
         let conn = self.conn.lock().await;
         let table = conn
             .open_table(&self.table_name)
@@ -281,16 +306,14 @@ impl LanceVectorStore {
         source_type: &str,
         source_id: &str,
     ) -> Result<usize, String> {
+        let st = sanitize_filter_value(source_type)?;
+        let si = sanitize_filter_value(source_id)?;
         let conn = self.conn.lock().await;
         let table = conn
             .open_table(&self.table_name)
             .execute()
             .await
             .map_err(|e| format!("open: {e}"))?;
-        let (st, si) = (
-            source_type.replace('\'', "''"),
-            source_id.replace('\'', "''"),
-        );
         let count = table
             .count_rows(Some(format!("source_type = '{st}' AND source_id = '{si}'")))
             .await

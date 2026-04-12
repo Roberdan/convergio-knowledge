@@ -103,6 +103,12 @@ impl LanceVectorStore {
         if ids.is_empty() {
             return Ok(0);
         }
+        // Validate all IDs before building filter
+        for id in ids {
+            if id.len() > 64 || id.contains(['\'', '"', '\\', ';', '\0']) {
+                return Err(format!("invalid id in batch: {id}"));
+            }
+        }
         let conn = self.conn.lock().await;
         let table = conn
             .open_table(&self.table_name)
