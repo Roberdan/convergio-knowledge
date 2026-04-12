@@ -51,6 +51,20 @@ pub struct PruneRequest {
     pub dry_run: bool,
 }
 
+impl PruneRequest {
+    pub fn validate(&self) -> Result<(), String> {
+        if let Some(days) = self.max_age_days {
+            if !(1..=3650).contains(&days) {
+                return Err("max_age_days must be 1-3650".into());
+            }
+        }
+        if let Some(ref st) = self.source_type {
+            crate::types::validate_source_type(st)?;
+        }
+        Ok(())
+    }
+}
+
 /// Run the full prune pipeline.
 pub async fn prune(store: &Arc<LanceVectorStore>, req: &PruneRequest) -> PruneReport {
     let mut report = PruneReport {

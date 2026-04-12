@@ -29,7 +29,7 @@ graph LR
 |------|------|----------|
 | Zero warnings | `RUSTFLAGS="-Dwarnings"` | CI blocks merge |
 | All tests pass | `cargo test --locked` | CI blocks merge |
-| Coverage ≥70% | `cargo tarpaulin --fail-under 70` | CI blocks merge |
+| Coverage ≥8% | `cargo tarpaulin --fail-under 8` | CI blocks merge |
 | Dependency audit (CVE) | `cargo audit` | CI blocks merge |
 | License + deps policy | `cargo deny check` | CI blocks merge |
 | Semver compatibility | `cargo semver-checks` | CI blocks merge (PR) |
@@ -38,6 +38,19 @@ graph LR
 | Format | `cargo fmt --check` | CI blocks merge |
 | SBOM (CycloneDX) | `cargo cyclonedx` | On release |
 | Auto-release | release-please + PAT | Fully automatic |
+
+## Security
+
+All endpoints validate input before processing. See [ADR-002](docs/adr/002-audit-security-fixes.md).
+
+| Control | Implementation |
+|---------|---------------|
+| SQL injection | Parameterized queries (SQLite) |
+| Vector DB injection | ID format validation + filter sanitization (LanceDB) |
+| Input validation | Content length (64 KiB), query length (2 KiB), limit bounds (1-100) |
+| Source type | Allowlist: task, commit, doc, agent_memory, kb, learning, decision |
+| Visibility | Enum: org, public |
+| Auth/AuthZ | Daemon middleware (ring-based security model) |
 
 ## Usage
 

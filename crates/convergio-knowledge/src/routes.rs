@@ -34,8 +34,11 @@ pub fn knowledge_routes(state: Arc<KnowledgeState>) -> Router {
 
 async fn handle_search(
     State(s): State<Arc<KnowledgeState>>,
-    Json(req): Json<SearchRequest>,
+    Json(mut req): Json<SearchRequest>,
 ) -> Json<Value> {
+    if let Err(e) = req.sanitize() {
+        return Json(json!({"error": e}));
+    }
     let embedding = crate::embedder::embed(&req.query).await;
     let fetch_limit =
         if req.org_id.is_some() || req.source_type.is_some() || req.project_id.is_some() {
@@ -97,6 +100,9 @@ async fn handle_write(
     State(s): State<Arc<KnowledgeState>>,
     Json(req): Json<WriteRequest>,
 ) -> Json<Value> {
+    if let Err(e) = req.validate() {
+        return Json(json!({"error": e}));
+    }
     let Some(ref store) = s.store else {
         return Json(json!({"error": "knowledge store not available"}));
     };
@@ -134,6 +140,9 @@ async fn handle_delete(
     State(s): State<Arc<KnowledgeState>>,
     Path(id): Path<String>,
 ) -> Json<Value> {
+    if !id.starts_with("ke-") || id.len() > 64 {
+        return Json(json!({"error": "invalid knowledge entry id"}));
+    }
     let Some(ref store) = s.store else {
         return Json(json!({"error": "knowledge store not available"}));
     };
@@ -163,6 +172,9 @@ async fn handle_prune(
     State(s): State<Arc<KnowledgeState>>,
     Json(req): Json<crate::pruning::PruneRequest>,
 ) -> Json<Value> {
+    if let Err(e) = req.validate() {
+        return Json(json!({"error": e}));
+    }
     let Some(ref store) = s.store else {
         return Json(json!({"error": "knowledge store not available"}));
     };

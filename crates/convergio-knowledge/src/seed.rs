@@ -51,9 +51,12 @@ fn read_file(root: &std::path::Path, rel: &str) -> Option<String> {
 
 fn has_table(pool: &ConnPool, name: &str) -> Option<PooledConn> {
     let conn = pool.get().ok()?;
-    let sql = format!("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='{name}'");
     let exists: bool = conn
-        .query_row(&sql, [], |r| r.get::<_, i64>(0).map(|c| c > 0))
+        .query_row(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?1",
+            [name],
+            |r| r.get::<_, i64>(0).map(|c| c > 0),
+        )
         .unwrap_or(false);
     if exists {
         Some(conn)
