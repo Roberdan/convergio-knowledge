@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.2](https://github.com/Roberdan/convergio-knowledge/compare/convergio-knowledge-v0.1.1...convergio-knowledge-v0.1.2) (2026-04-12)
+
+
+### Bug Fixes
+
+* security audit — input validation, injection prevention ([#6](https://github.com/Roberdan/convergio-knowledge/issues/6)) ([b3c7f51](https://github.com/Roberdan/convergio-knowledge/commit/b3c7f518e294666524875c8b788b6008dbcea661))
+
+
+### Documentation
+
+* add .env.example with required environment variables ([#7](https://github.com/Roberdan/convergio-knowledge/issues/7)) ([00a09c1](https://github.com/Roberdan/convergio-knowledge/commit/00a09c18788ddf9932ae02ab525c3b3e663d5216))
+
 ## [0.1.1](https://github.com/Roberdan/convergio-knowledge/compare/convergio-knowledge-v0.1.0...convergio-knowledge-v0.1.1) (2026-04-11)
 
 
