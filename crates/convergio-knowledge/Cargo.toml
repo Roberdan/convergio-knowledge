@@ -4,6 +4,7 @@ description = "Vector knowledge store — semantic memory for agents via embeddi
 version = "0.1.5"
 edition.workspace = true
 license.workspace = true
+repository = "https://github.com/Roberdan/convergio-knowledge"
 readme = "../../README.md"
 
 [dependencies]
