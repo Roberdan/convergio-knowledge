@@ -21,7 +21,7 @@ pub const EMBEDDING_DIM: usize = 384;
 const MAX_SEARCH_LIMIT: usize = 100;
 
 /// Validate that an ID matches the expected format (`ke-<uuid>`).
-fn validate_id(id: &str) -> Result<(), String> {
+pub(crate) fn validate_id(id: &str) -> Result<(), String> {
     if id.len() > 64 || !id.starts_with("ke-") || id.contains(['\'', '"', '\\', ';', '\0']) {
         return Err(format!("invalid knowledge entry id: {id}"));
     }
@@ -29,12 +29,12 @@ fn validate_id(id: &str) -> Result<(), String> {
 }
 
 /// Sanitize a string for use in a LanceDB filter expression.
-/// Only allows alphanumeric, hyphens, underscores, dots, and slashes.
-fn sanitize_filter_value(s: &str) -> Result<String, String> {
+/// Rejects strings containing characters that could break filter syntax.
+fn sanitize_filter_value(s: &str) -> Result<&str, String> {
     if s.len() > 256 || s.contains(['\'', '"', '\\', ';', '\0']) {
         return Err("invalid filter value: contains forbidden characters".to_string());
     }
-    Ok(s.replace('\'', "''"))
+    Ok(s)
 }
 
 pub struct LanceVectorStore {
@@ -293,9 +293,8 @@ impl LanceVectorStore {
             .execute()
             .await
             .map_err(|e| format!("open: {e}"))?;
-        let id_esc = id.replace('\'', "''");
         table
-            .delete(&format!("id = '{id_esc}'"))
+            .delete(&format!("id = '{id}'"))
             .await
             .map_err(|e| format!("delete: {e}"))?;
         Ok(true)
