@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.4](https://github.com/Roberdan/convergio-knowledge/compare/v0.1.3...v0.1.4) (2026-04-13)
+
+
+### Bug Fixes
+
+* **release:** use vX.Y.Z tag format (remove component) ([3b93490](https://github.com/Roberdan/convergio-knowledge/commit/3b934906a611b8bd9715a7d605e143afdd1b68b2))
+* security audit — input validation, injection prevention ([#6](https://github.com/Roberdan/convergio-knowledge/issues/6)) ([b3c7f51](https://github.com/Roberdan/convergio-knowledge/commit/b3c7f518e294666524875c8b788b6008dbcea661))
+
+
+### Documentation
+
+* add .env.example with required environment variables ([#7](https://github.com/Roberdan/convergio-knowledge/issues/7)) ([00a09c1](https://github.com/Roberdan/convergio-knowledge/commit/00a09c18788ddf9932ae02ab525c3b3e663d5216))
+
 ## [0.1.3](https://github.com/Roberdan/convergio-knowledge/compare/v0.1.2...v0.1.3) (2026-04-13)
 
 
