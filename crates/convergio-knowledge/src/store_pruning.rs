@@ -8,7 +8,7 @@ use arrow_array::StringArray;
 use futures::StreamExt;
 use lancedb::query::ExecutableQuery;
 
-use crate::store::LanceVectorStore;
+use crate::store::{validate_id, LanceVectorStore};
 use crate::types::KnowledgeEntry;
 
 impl LanceVectorStore {
@@ -29,7 +29,14 @@ impl LanceVectorStore {
             .await
             .map_err(|e| format!("query source_ids: {e}"))?;
         let mut ids = HashSet::new();
-        while let Some(Ok(batch)) = stream.next().await {
+        while let Some(batch_result) = stream.next().await {
+            let batch = match batch_result {
+                Ok(b) => b,
+                Err(e) => {
+                    tracing::warn!(error = %e, "lance stream error in all_source_ids");
+                    continue;
+                }
+            };
             if let Some(col) = batch
                 .column_by_name("source_id")
                 .and_then(|c| c.as_any().downcast_ref::<StringArray>())
@@ -61,7 +68,14 @@ impl LanceVectorStore {
             .map_err(|e| format!("query all: {e}"))?;
 
         let mut out = Vec::new();
-        while let Some(Ok(batch)) = stream.next().await {
+        while let Some(batch_result) = stream.next().await {
+            let batch = match batch_result {
+                Ok(b) => b,
+                Err(e) => {
+                    tracing::warn!(error = %e, "lance stream error in list_all_metadata");
+                    continue;
+                }
+            };
             let col = |name: &str| -> Option<&StringArray> {
                 batch.column_by_name(name)?.as_any().downcast_ref()
             };
@@ -103,11 +117,8 @@ impl LanceVectorStore {
         if ids.is_empty() {
             return Ok(0);
         }
-        // Validate all IDs before building filter
         for id in ids {
-            if id.len() > 64 || id.contains(['\'', '"', '\\', ';', '\0']) {
-                return Err(format!("invalid id in batch: {id}"));
-            }
+            validate_id(id)?;
         }
         let conn = self.conn.lock().await;
         let table = conn
@@ -115,10 +126,7 @@ impl LanceVectorStore {
             .execute()
             .await
             .map_err(|e| format!("open: {e}"))?;
-        let escaped: Vec<String> = ids
-            .iter()
-            .map(|id| format!("'{}'", id.replace('\'', "''")))
-            .collect();
+        let escaped: Vec<String> = ids.iter().map(|id| format!("'{id}'")).collect();
         let filter = format!("id IN ({})", escaped.join(", "));
         table
             .delete(&filter)
