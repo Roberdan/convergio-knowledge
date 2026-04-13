@@ -5,7 +5,7 @@ members = ["crates/convergio-knowledge"]
 [workspace.package]
 version = "0.1.5"
 edition = "2021"
-license = "LicenseRef-Convergio-Community"
+license = "MIT"
 repository = "https://github.com/Roberdan/convergio-knowledge"
 
 [workspace.dependencies]
