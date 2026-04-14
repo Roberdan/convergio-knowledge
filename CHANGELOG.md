@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.8](https://github.com/Roberdan/convergio-knowledge/compare/v0.1.7...v0.1.8) (2026-04-14)
+
+
+### Bug Fixes
+
+* security audit pass  dead code, error swallowing, filter sanitization2 ([a9e481f](https://github.com/Roberdan/convergio-knowledge/commit/a9e481f722fffbdcaef879234b28aac758c957ac))
+* security audit pass  dead code, error swallowing, filter sanitization2 ([b0db236](https://github.com/Roberdan/convergio-knowledge/commit/b0db23671b19db2dfde2c9ab801b064c7746f9e6))
+
 ## [0.1.7](https://github.com/Roberdan/convergio-knowledge/compare/v0.1.6...v0.1.7) (2026-04-13)
 
 
