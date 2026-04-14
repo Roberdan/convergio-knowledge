@@ -914,9 +914,9 @@ checksum = "3d52eff69cd5e647efe296129160853a42795992097e8af39800e1060caeea9b"
 
 [[package]]
 name = "convergio-db"
-version = "0.1.6"
+version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "072b98c7d238dd31598254affb5d240745bf91d72b438dbc6dc97ea0fcb42426"
+checksum = "9ef787dd72baf3e10703c9b6454c18093fd3d40d7b05d6c3875d1db28074e4c2"
 dependencies = [
  "chrono",
  "convergio-types",
@@ -954,9 +954,9 @@ dependencies = [
 
 [[package]]
 name = "convergio-types"
-version = "0.1.6"
+version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ed684938c15a853d918007df2d0e8151091ec89eded39c6d66f95950450f3aa"
+checksum = "418d31b0af7effde6c7d0dabb422c539f1d6a8cea7fe72adf366bbfd2ff21542"
 dependencies = [
  "axum",
  "chrono",

@@ -11,7 +11,7 @@ repository = "https://github.com/Roberdan/convergio-knowledge"
 [workspace.dependencies]
 # SDK dependencies (crates.io)
 convergio-types = "0.1.6"
-convergio-db = "0.1.6"
+convergio-db = "0.1.10"
 
 # Common deps — pin same versions as SDK for compatibility
 thiserror = "1"
